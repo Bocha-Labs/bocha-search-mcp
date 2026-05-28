@@ -1,118 +1,274 @@
-# MCP Server 产品名称: 博查
+# 博查 MCP Server
 
 ![Bocha Search MCP Server](assets/bocha-logo-720x180.png)
 
-## 版本信息
-v1
+博查 MCP Server 为支持 MCP 的 Agent、桌面客户端和自动化工具提供统一的联网搜索能力，包含:
 
-## 产品描述
-### 短描述
-博查是一个给AI用的搜索引擎，让你的AI应用从近百亿网页和生态内容源中获取高质量的世界知识，涵盖天气、新闻、百科、医疗、火车票、图片等多种领域。
+- `bocha_web_search`: 通用网页搜索
+- `bocha_ai_search`: 语义增强搜索，返回模态卡等结构化内容
 
-### 长描述
-博查是一个给AI用的搜索引擎，让你的AI应用从近百亿网页和生态内容源中获取高质量的世界知识，涵盖天气、新闻、百科、医疗、火车票、图片等多种领域。
+这份仓库经过调整后，重点解决了“必须先手工 clone 到本地、再自己拼路径才能运行”的问题。推荐直接使用 `uvx` 从 Git 仓库拉起，适合 LobeHub、Claude Desktop、Cursor 以及各类自动化 Agent 自助接入。
 
-## 分类
-网页搜索
+## 产品简介
 
-## 标签
-搜索, 新闻, 天气, 百科
+博查是一个面向 AI 应用的搜索引擎，让你的 Agent 从近千亿网页和生态内容源中获取高质量世界知识，覆盖新闻、天气、百科、医疗、火车票、图片等多类场景。
 
-## Tools
-### Tool1: Bocha Web Search
-#### 详细描述
-从博查搜索全网信息和网页链接，返回结果包括网页标题、网页URL、网页摘要、网站名称、网站图标、发布时间、图片链接等。
+服务开通地址:
 
-#### 调试所需要的参数
-输入:
-  - query: 搜索词(必填)
-  - freshness: 搜索指定时间范围内的网页 (可选值 YYYY-MM-DD, YYYY-MM-DD..YYYY-MM-DD, noLimit, oneYear, oneMonth, oneWeek, oneDay. 默认为 noLimit)
-  - count: 返回结果的条数 (1-50, 默认为 10)
+- [博查 AI 开放平台](https://open.bocha.cn)
 
-输出:
-  - 网页标题、网页链接、网页摘要、发布时间、网站名称
+鉴权方式:
 
-### Tool2: Bocha AI Search
-#### 详细描述
-在博查网页搜索的基础上，AI识别搜索词语义并额外返回垂直领域内容的结构化模态卡，例如天气卡、日历卡、百科卡等几十种模态卡，在语义识别、搜索结果时效性、内容丰富性等方面更好。
+- `BOCHA_API_KEY`
 
-#### 调试所需要的参数
-输入:
-  - query: 搜索词(必填)
-  - freshness: 搜索指定时间范围内的网页 (可选值 YYYY-MM-DD, YYYY-MM-DD..YYYY-MM-DD, noLimit, oneYear, oneMonth, oneWeek, oneDay. 默认为 noLimit)
-  - count: 返回结果的条数 (1-50, 默认为 10)
+## Agent 自助使用
 
-输出:
-  - 网页标题、网页链接、网页摘要、发布时间、网站名称、模态卡
+### 推荐方式: 直接从 Git 仓库运行
 
-## 可适配平台
-方舟, python, Claude, Cursor等
-
-## 服务开通链接
-您需要前往 [博查AI开放平台](https://open.bochaai.com)，登陆后获取 API KEY。
-
-## 鉴权方式
-API Key
-
-## 安装部署
-### 步骤一：下载代码至本地
-```bash
-git clone git@github.com:BochaAI/bocha-search-mcp.git
-```
-
-### 步骤二: 在客户端中配置
-#### Claude Desktop
-On MacOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`
-
-On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
+如果你的 MCP 客户端支持 `uvx`，推荐直接使用下面的配置。它不依赖本地源码目录，也不需要先执行手工安装。
 
 ```json
+{
   "mcpServers": {
     "bocha-search-mcp": {
-      "command": "uv",
+      "command": "uvx",
       "args": [
-        "--directory",
-        "/path/to/bocha-search-mcp",
-        "run",
+        "--from",
+        "git+https://github.com/Bocha-Labs/bocha-search-mcp",
         "bocha-search-mcp"
       ],
       "env": {
-        "BOCHA_API_KEY": "sk-****"
+        "BOCHA_API_KEY": "your-api-key"
       }
     }
   }
-  ```
-
-### 步骤三: 在客户端中使用
-![示例: alibaba 2024 esg report](assets/alibaba-2024-esg-report.png)
-
-### 步骤四: 调试本地服务（可选）
-```bash
-npx @modelcontextprotocol/inspector uv --directory /path/to/bocha-search-mcp run bocha-search-mcp
+}
 ```
 
-## 客户案例
+仓库根目录也提供了可直接复用的示例文件:
 
-目前博查已经累计服务**3000+企业用户**和**20000+开发者用户**，并且成为**DeepSeek官方联网搜索供应方**以及**阿里、腾讯、字节官方推荐的搜索API**，目前**承接着国内60%以上AI应用的联网搜索请求**。
+- `mcp-config.example.json`
 
-博查的搜索内容源包括全网近百亿个网页，以及生态合作内容（含短视频、新闻、百科、天气、医疗、火车票、酒店、餐厅、景点、企业、学术等）。博查后续将会继续与各个平台在内容生态、智能体创作等方面开展共创合作，为博查用户的搜索问题提供丰富多彩的答案。
+### 本地开发方式
+
+如果你已经拿到了仓库源码，适合本地调试或二次开发:
+
+```bash
+uv run bocha-search-mcp
+```
+
+也可以直接使用模块方式启动:
+
+```bash
+uv run python -m bocha_search_mcp
+```
+
+## 在常见客户端中使用
+
+### LobeHub Desktop
+
+在自定义 MCP 或 JSON 快速导入中使用:
+
+```json
+{
+  "mcpServers": {
+    "bocha-search-mcp": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/Bocha-Labs/bocha-search-mcp",
+        "bocha-search-mcp"
+      ],
+      "env": {
+        "BOCHA_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+### Claude Desktop
+
+macOS 配置文件:
+
+- `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+Windows 配置文件:
+
+- `%APPDATA%/Claude/claude_desktop_config.json`
+
+配置内容:
+
+```json
+{
+  "mcpServers": {
+    "bocha-search-mcp": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/Bocha-Labs/bocha-search-mcp",
+        "bocha-search-mcp"
+      ],
+      "env": {
+        "BOCHA_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+### Cursor
+
+可将同样的配置写入 Cursor 使用的 MCP 配置文件中:
+
+```json
+{
+  "mcpServers": {
+    "bocha-search-mcp": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/Bocha-Labs/bocha-search-mcp",
+        "bocha-search-mcp"
+      ],
+      "env": {
+        "BOCHA_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+## 环境准备
+
+### 必需项
+
+- 已安装 `uv`
+- 已获取博查 API Key
+
+### 环境变量
+
+可复制 `.env.example` 为 `.env`:
+
+```bash
+cp .env.example .env
+```
+
+然后填入:
+
+```dotenv
+BOCHA_API_KEY="your-api-key"
+```
+
+## 工具说明
+
+### `bocha_web_search`
+
+从博查搜索全网网页信息，返回网页标题、链接、摘要、发布时间、站点名称等。
+
+输入参数:
+
+- `query`: 搜索词，必填
+- `freshness`: 时间范围，可选值 `YYYY-MM-DD`、`YYYY-MM-DD..YYYY-MM-DD`、`noLimit`、`oneYear`、`oneMonth`、`oneWeek`、`oneDay`
+- `count`: 返回结果条数，范围 `1-50`
+
+### `bocha_ai_search`
+
+在网页搜索基础上返回更丰富的语义理解结果与模态卡内容。
+
+输入参数:
+
+- `query`: 搜索词，必填
+- `freshness`: 时间范围，可选值 `YYYY-MM-DD`、`YYYY-MM-DD..YYYY-MM-DD`、`noLimit`、`oneYear`、`oneMonth`、`oneWeek`、`oneDay`
+- `count`: 返回结果条数，范围 `1-50`
+
+注意:
+
+- `bocha_ai_search` 可能需要单独开通接口权限
+- 如果返回 `401` 且 message 为“无接口调用权限”，说明当前 API Key 尚未加入对应白名单
+
+## 调试
+
+如果需要使用 MCP Inspector 调试本地仓库:
+
+```bash
+npx @modelcontextprotocol/inspector uv run bocha-search-mcp
+```
+
+如果希望调试远端 Git 拉起方式:
+
+```bash
+npx @modelcontextprotocol/inspector uvx --from git+https://github.com/Bocha-Labs/bocha-search-mcp bocha-search-mcp
+```
+
+## 测试
+
+当前仓库保留了一组小而关键的回归测试，重点覆盖:
+
+- 启动入口在缺少 `BOCHA_API_KEY` 时的行为
+- 关键参数校验
+- Web Search / AI Search 的结果解析
+
+运行方式:
+
+```bash
+uv run python -m unittest discover -s tests -v
+```
+
+对于这类 MCP 仓库，优先建议提交可执行的测试代码，而不是额外维护一份冗长的测试文档。README 中保留运行命令与覆盖范围说明即可。
+
+## 使用示例
+
+![示例: alibaba 2024 esg report](assets/alibaba-2024-esg-report.png)
 
 ## 常见问题
 
-### Bocha Web Search API服务可以提供什么样的能力?
-Bocha Web Search 提供全网通用搜索能力。您可以从博查搜索全网信息和网页链接，返回结果包括网页标题、网页URL、网页摘要、网站名称、网站图标、发布时间、图片链接等，每次搜索结果返回的网页最多支持50条（count50）。
+### 常见错误码
 
-传统搜索引擎使用的是关键字+竞价排名机制的搜索算法，搜索结果的目标不是直接为用户提供正确的答案，而是吸引用户点击以获得广告收入。
+调用博查 API 时，常见错误及处理方式如下:
 
-博查是基于多模态混合搜索与语义排序技术的新一代搜索引擎，支持AI应用场景的自然语言搜索方式，同时搜索结果目标是提供干净、准确、高质量的答案。
+| HTTP 状态码 | 示例 message                         | 常见原因                   | 建议处理方式                                                                   |
+| ----------- | ------------------------------------ | -------------------------- | ------------------------------------------------------------------------------ |
+| 400         | `Missing parameter query`            | 请求参数缺失               | 检查 `query` 是否已正确传入                                                    |
+| 400         | `The API KEY is missing`             | 未传入鉴权信息             | 检查 `BOCHA_API_KEY` 是否已正确配置，并确认 MCP 客户端已将环境变量传入服务进程 |
+| 401         | `Invalid API KEY`                    | API Key 无效               | 检查 API Key 是否填写错误、已过期，或使用了错误环境的 Key                      |
+| 401         | `无接口调用权限`                     | 当前账号未开通对应接口权限 | `bocha_ai_search` 可能需要额外白名单，请按博查官方指引联系技术人员开通         |
+| 403         | `You do not have enough money`       | 账户余额不足               | 前往 [博查 AI 开放平台](https://open.bocha.cn) 充值                            |
+| 429         | `You have reached the request limit` | 请求频率达到限制           | 降低请求频率，或根据 API 定价与额度规则提升可用额度                            |
+| 500         | `xxxx`                               | 服务端内部异常             | 稍后重试，并结合响应中的 `log_id` 联系官方支持排查                             |
 
-博查的语义排序技术基于Transformer架构，会根据搜索结果与用户问题的语义相关性进行排序。由于大模型同样是Transformer架构，通过判断上下文与用户问题的语义相关性进行取舍，因此最终大模型更加喜欢博查提供的搜索结果。
+如果返回错误，请优先关注响应中的 `log_id`，便于向博查技术支持定位问题。
 
-目前博查的搜索效果是国内最接近Bing Search API的搜索引擎，由于Bing Search API数据会出海（无国内Region）、价格昂贵（15美元/千次）且不提供文本摘要（只有50-100字的snippet），国内很多企业客户都已经从Bing切换至博查。
+### 为什么不再推荐 `uv --directory /path/to/repo run ...`?
 
-### Bocha AI Search API 服务可以提供什么样的能力？
-Bocha AI Search 在博查 Web Search 的基础上，AI识别搜索词语义并额外返回垂直领域内容的结构化模态卡，例如天气卡、日历卡、百科卡等几十种模态卡，在语义识别、搜索结果时效性、内容丰富性等方面更好。
+这种方式依赖人工提前下载源码并填入本地绝对路径，不适合市场安装、自动化导入和 Agent 自助使用。改成 `uvx --from git+https://...` 后，客户端可直接按标准命令拉起。
 
-目前支持的模态卡类型包括：天气、百科、医疗、万年历、火车、星座属相、贵金属、汇率、油价、手机、股票、汽车等。
+### 为什么推荐 `uvx`?
 
-以股票信息为例，网页中一般无法获取到实时的股票数据，需要结构化模态卡来支撑。博查AI Search API可以在提供网页信息的基础上，额外输出股价的结构化数据模态卡，通过模态卡提供的结构化数据，可以进一步增强AI应用中用户对于时效性问题的回答准确性。
+`uvx` 更适合“一次配置，随处运行”的 MCP 接入方式。对于市场、Agent、桌面客户端和 CI 环境，它比手工 clone 本地仓库更稳定，也更容易自动化。
+
+### 将来发布到 PyPI 后还需要改配置吗?
+
+如果后续发布到 PyPI，可以进一步简化为:
+
+```json
+{
+  "mcpServers": {
+    "bocha-search-mcp": {
+      "command": "uvx",
+      "args": ["bocha-search-mcp"],
+      "env": {
+        "BOCHA_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+## 项目说明
+
+目前博查已累计服务大量企业与开发者用户，并持续为各类 AI 应用提供联网搜索能力。这个 MCP Server 的目标，是让 Agent 以最少的人为干预接入博查搜索。
+
+## License
+
+本项目使用 `MIT` License，见 [LICENSE](LICENSE)。
