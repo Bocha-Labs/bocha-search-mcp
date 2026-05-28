@@ -1,6 +1,6 @@
 [project]
 name = "bocha-search-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "Bocha MCP server for Web Search and AI Search."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -21,12 +21,14 @@ classifiers = [
  "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 [[project.authors]]
-name = "kunkun"
-email = "kunkun@1998.com"
+name = "Bocha"
+email = "support@bochaai.com"
 
 [project.urls]
 Homepage = "https://github.com/Bocha-Labs/bocha-search-mcp"
 Repository = "https://github.com/Bocha-Labs/bocha-search-mcp"
+Documentation = "https://github.com/Bocha-Labs/bocha-search-mcp/blob/master/README.md"
+OpenPlatform = "https://open.bocha.cn"
 Issues = "https://github.com/Bocha-Labs/bocha-search-mcp/issues"
 
 [build-system]
