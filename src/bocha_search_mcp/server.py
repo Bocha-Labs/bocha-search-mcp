@@ -20,34 +20,23 @@ VALID_FRESHNESS_VALUES = {
 }
 
 
-# Initialize FastMCP server
-server = FastMCP(
-    "bocha-search-mcp",
-    instructions="""
-# Bocha Search MCP Server
-                 
-Bocha is a Chinese search engine for AI, This server provides tools for searching the web using Bocha Search API.
-It allows you to get enhanced search details from billions of web documents, including weather, news, wikis, healthcare, train tickets, images, and more.
+SERVER_INSTRUCTIONS = """
+Bocha Search MCP Server provides two tools for real-time web search and semantic AI search.
 
-## Available Tools
-                 
-### 1. bocha_web_search 
-Search with Bocha Web Search and get enhanced search details from billions of web documents, including page titles, urls, summaries, site names, site icons, publication dates, image links, and more.
+Available tools:
+- bocha_web_search: General web search with title, URL, description(snippets, summary), published date, and site name.
+- bocha_ai_search: Semantic search with structured cards and richer vertical-domain results.
 
-### 2. bocha_ai_search
-Search with Bocha AI Search, recognizes the semantics of search terms and additionally returns structured modal cards with content from vertical domains.
+Usage notes:
+- Use bocha_web_search for standard web retrieval and citations.
+- Use bocha_ai_search when semantic retrieval or structured results are preferred.
+- bocha_ai_search may require separate API access permission.
 
-## Output Format
-
-All search results will be formatted as text with clear sections for each
-result item, including:
-
-- Bocha Web search: Title, URL, Description, Published date and Site name
-- Bocha AI search: Title, URL, Description, Published date, Site name, and structured data card
-
-If the API key is missing or invalid, appropriate error messages will be returned.
+If the API key is missing, invalid, or lacks permission, return the upstream error message clearly.
 """
-)
+
+
+server = FastMCP("Bocha Search", instructions=SERVER_INSTRUCTIONS)
 
 
 def _validate_count(count: int) -> None:
