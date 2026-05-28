@@ -1,15 +1,33 @@
 [project]
 name = "bocha-search-mcp"
-version = "0.0.1"
-description = "A"
+version = "0.1.0"
+description = "Bocha MCP server for Web Search and AI Search."
 readme = "README.md"
+license = { file = "LICENSE" }
 requires-python = ">=3.12"
 dependencies = [
+ "httpx>=0.27.0",
  "mcp[cli]>=1.6.0",
+ "python-dotenv>=1.0.1",
+]
+keywords = ["bocha", "mcp", "search", "ai", "ai-search", "web-search"]
+classifiers = [
+ "Programming Language :: Python :: 3",
+ "Programming Language :: Python :: 3.12",
+ "Environment :: Console",
+ "Intended Audience :: Developers",
+ "License :: OSI Approved :: MIT License",
+ "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+ "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 [[project.authors]]
 name = "kunkun"
 email = "kunkun@1998.com"
+
+[project.urls]
+Homepage = "https://github.com/Bocha-Labs/bocha-search-mcp"
+Repository = "https://github.com/Bocha-Labs/bocha-search-mcp"
+Issues = "https://github.com/Bocha-Labs/bocha-search-mcp/issues"
 
 [build-system]
 requires = [ "hatchling",]
@@ -17,3 +35,6 @@ build-backend = "hatchling.build"
 
 [project.scripts]
 bocha-search-mcp = "bocha_search_mcp:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bocha_search_mcp"]

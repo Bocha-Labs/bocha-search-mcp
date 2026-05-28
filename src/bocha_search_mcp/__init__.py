@@ -13,7 +13,7 @@ def main():
         )
         print(
             "Get a Bocha API key from: "
-            "https://open.bochaai.com",
+            "https://open.bocha.cn",
             file=sys.stderr,
         )
         sys.exit(1)

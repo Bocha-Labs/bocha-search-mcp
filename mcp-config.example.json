@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "bocha-search-mcp": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/Bocha-Labs/bocha-search-mcp",
+        "bocha-search-mcp"
+      ],
+      "env": {
+        "BOCHA_API_KEY": "your-api-key"
+      }
+    }
+  }
+}

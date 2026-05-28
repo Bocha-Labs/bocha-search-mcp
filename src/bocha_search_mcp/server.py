@@ -1,8 +1,6 @@
-import asyncio  # Add asyncio import
-import os
-import sys
-import time
 import json
+import os
+from collections.abc import Iterable
 
 import httpx
 from dotenv import load_dotenv
@@ -10,11 +8,22 @@ from mcp.server.fastmcp import FastMCP
 
 load_dotenv()
 
+BOCHA_WEB_SEARCH_ENDPOINT = "https://api.bocha.cn/v1/web-search?utm_source=bocha-mcp-local"
+BOCHA_AI_SEARCH_ENDPOINT = "https://api.bocha.cn/v1/ai-search?utm_source=bocha-mcp-local"
+DEFAULT_TIMEOUT = 10.0
+VALID_FRESHNESS_VALUES = {
+    "noLimit",
+    "oneYear",
+    "oneMonth",
+    "oneWeek",
+    "oneDay",
+}
+
 
 # Initialize FastMCP server
 server = FastMCP(
     "bocha-search-mcp",
-    prompt="""
+    instructions="""
 # Bocha Search MCP Server
                  
 Bocha is a Chinese search engine for AI, This server provides tools for searching the web using Bocha Search API.
@@ -41,6 +50,86 @@ If the API key is missing or invalid, appropriate error messages will be returne
 )
 
 
+def _validate_count(count: int) -> None:
+    if not 1 <= count <= 50:
+        raise ValueError("count must be between 1 and 50")
+
+
+def _validate_freshness(freshness: str) -> None:
+    if not freshness:
+        raise ValueError("freshness cannot be empty")
+
+    if freshness in VALID_FRESHNESS_VALUES:
+        return
+
+    is_single_date = len(freshness) == 10 and freshness.count("-") == 2
+    is_date_range = (
+        ".." in freshness
+        and len(freshness.split("..")) == 2
+        and all(len(part) == 10 and part.count("-") == 2 for part in freshness.split(".."))
+    )
+
+    if is_single_date or is_date_range:
+        return
+
+    raise ValueError(
+        "freshness must be one of: YYYY-MM-DD, YYYY-MM-DD..YYYY-MM-DD, "
+        "noLimit, oneYear, oneMonth, oneWeek, oneDay"
+    )
+
+
+def _get_api_key() -> str:
+    api_key = os.environ.get("BOCHA_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError(
+            "Bocha API key is not configured. Please set the BOCHA_API_KEY environment variable."
+        )
+    return api_key
+
+
+def _format_web_result(result: dict) -> str:
+    return "\n".join(
+        [
+            f"Title: {result.get('name', '')}",
+            f"URL: {result.get('url', '')}",
+            f"Description: {result.get('summary', '')}",
+            f"Published date: {result.get('datePublished', '')}",
+            f"Site name: {result.get('siteName', '')}",
+        ]
+    )
+
+
+def _safe_parse_json(text: str) -> dict:
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError:
+        return {}
+
+    return parsed if isinstance(parsed, dict) else {}
+
+
+async def _post_json(endpoint: str, payload: dict) -> dict:
+    headers = {
+        "Authorization": f"Bearer {_get_api_key()}",
+        "Content-Type": "application/json",
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            endpoint,
+            headers=headers,
+            json=payload,
+            timeout=DEFAULT_TIMEOUT,
+        )
+        response.raise_for_status()
+        return response.json()
+
+
+def _join_results(results: Iterable[str]) -> str:
+    items = [item for item in results if item]
+    return "\n\n".join(items) if items else "No results found."
+
+
 @server.tool()
 async def bocha_web_search(
     query: str, freshness: str = "noLimit", count: int = 10
@@ -53,64 +142,36 @@ async def bocha_web_search(
         freshness: The time range for the search results. (Available options YYYY-MM-DD, YYYY-MM-DD..YYYY-MM-DD, noLimit, oneYear, oneMonth, oneWeek, oneDay. Default is noLimit)
         count: Number of results (1-50, default 10)
     """
-    # Get API key from environment
-    boch_api_key = os.environ.get("BOCHA_API_KEY", "")
-
-    if not boch_api_key:
-        return (
-            "Error: Bocha API key is not configured. Please set the "
-            "BOCHA_API_KEY environment variable."
-        )
-
-    # Endpoint
-    endpoint = "https://api.bochaai.com/v1/web-search?utm_source=bocha-mcp-local"
-
     try:
+        _validate_freshness(freshness)
+        _validate_count(count)
+
         payload = {
             "query": query,
             "summary": True,
             "freshness": freshness,
-            "count": count
+            "count": count,
         }
 
-        headers = {
-            "Authorization": f"Bearer {boch_api_key}",
-            "Content-Type": "application/json",
-        }
+        response = await _post_json(BOCHA_WEB_SEARCH_ENDPOINT, payload)
+        data = response.get("data", {})
+        web_pages = data.get("webPages", {})
+        items = web_pages.get("value", [])
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                endpoint, headers=headers, json=payload, timeout=10.0
-            )
-
-            response.raise_for_status()
-            resp = response.json()
-            if "data" not in resp:
-                return "Search error."
-            
-            data = resp["data"]
-
-            if "webPages" not in data:
-                return "No results found."
-
-            results = []
-            for result in data["webPages"]["value"]:
-                results.append(
-                    f"Title: {result['name']}\n"
-                    f"URL: {result['url']}\n"
-                    f"Description: {result['summary']}\n"
-                    f"Published date: {result['datePublished']}\n"
-                    f"Site name: {result['siteName']}"
-                )
-
-            return "\n\n".join(results)
-
+        return _join_results(_format_web_result(item) for item in items if isinstance(item, dict))
+    except ValueError as e:
+        return f"Invalid input: {e}"
+    except RuntimeError as e:
+        return f"Error: {e}"
     except httpx.HTTPStatusError as e:
-        return f"Bocha Web Search API HTTP error occurred: {e.response.status_code} - {e.response.text}"
+        return (
+            "Bocha Web Search API HTTP error occurred: "
+            f"{e.response.status_code} - {e.response.text}"
+        )
     except httpx.RequestError as e:
-        return f"Error communicating with Bocha Web Search API: {str(e)}"
+        return f"Error communicating with Bocha Web Search API: {e}"
     except Exception as e:
-        return f"Unexpected error: {str(e)}"
+        return f"Unexpected error: {e}"
 
 
 @server.tool()
@@ -125,70 +186,49 @@ async def bocha_ai_search(
         freshness: The time range for the search results. (Available options noLimit, oneYear, oneMonth, oneWeek, oneDay. Default is noLimit)
         count: Number of results (1-50, default 10)
     """
-    # Get API key from environment
-    boch_api_key = os.environ.get("BOCHA_API_KEY", "")
-
-    if not boch_api_key:
-        return (
-            "Error: Bocha API key is not configured. Please set the "
-            "BOCHA_API_KEY environment variable."
-        )
-
-    # Endpoint
-    endpoint = "https://api.bochaai.com/v1/ai-search?utm_source=bocha-mcp-local"
-
     try:
+        _validate_freshness(freshness)
+        _validate_count(count)
+
         payload = {
             "query": query,
             "freshness": freshness,
             "count": count,
             "answer": False,
-            "stream": False
+            "stream": False,
         }
 
-        headers = {
-            "Authorization": f"Bearer {boch_api_key}",
-            "Content-Type": "application/json",
-        }
+        response = await _post_json(BOCHA_AI_SEARCH_ENDPOINT, payload)
+        results: list[str] = []
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                endpoint, headers=headers, json=payload, timeout=10.0
-            )
+        for message in response.get("messages", []):
+            if not isinstance(message, dict):
+                continue
 
-            response.raise_for_status()
-            response = response.json()
-            results = []
-            if "messages" in response:
-                for message in response["messages"]:
-                    content = {}
-                    try:
-                        content = json.loads(message["content"])
-                    except:
-                        content = {}
-                        
-                    # 网页
-                    if message["content_type"] == "webpage":
-                        if "value" in content:
-                            for item in content["value"]:
-                                results.append(
-                                    f"Title: {item['name']}\n"
-                                    f"URL: {item['url']}\n"
-                                    f"Description: {item['summary']}\n"
-                                    f"Published date: {item['datePublished']}\n"
-                                    f"Site name: {item['siteName']}"
-                                )
-                    elif message["content_type"] != "image" and message["content"] != "{}":
-                        results.append(message["content"])
+            content_text = str(message.get("content", ""))
+            content_type = message.get("content_type")
+            parsed_content = _safe_parse_json(content_text)
 
-            if not results:
-                return "No results found."
-            
-            return "\n\n".join(results)
+            if content_type == "webpage":
+                for item in parsed_content.get("value", []):
+                    if isinstance(item, dict):
+                        results.append(_format_web_result(item))
+                continue
 
+            if content_type != "image" and content_text and content_text != "{}":
+                results.append(content_text)
+
+        return _join_results(results)
+    except ValueError as e:
+        return f"Invalid input: {e}"
+    except RuntimeError as e:
+        return f"Error: {e}"
     except httpx.HTTPStatusError as e:
-        return f"Bocha AI Search API HTTP error occurred: {e.response.status_code} - {e.response.text}"
+        return (
+            "Bocha AI Search API HTTP error occurred: "
+            f"{e.response.status_code} - {e.response.text}"
+        )
     except httpx.RequestError as e:
-        return f"Error communicating with Bocha AI Search API: {str(e)}"
+        return f"Error communicating with Bocha AI Search API: {e}"
     except Exception as e:
-        return f"Unexpected error: {str(e)}"
+        return f"Unexpected error: {e}"
